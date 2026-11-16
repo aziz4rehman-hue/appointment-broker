@@ -1,0 +1,22 @@
+[project]
+name = "appointment-broker"
+version = "0.1.0"
+description = "AI appointment broker: intake, match, hold, and confirm. In-memory calendar, no network."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Aziz Rehman" }]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/aziz4rehman-hue/appointment-broker"
+
+[project.scripts]
+apptbroker = "apptbroker.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["apptbroker*"]
