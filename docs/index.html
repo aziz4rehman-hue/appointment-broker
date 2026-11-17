@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>appointment-broker demo</title>
+<style>
+  :root { color-scheme: dark; --bg:#0c0f14; --card:#151b24; --line:#2a3444; --text:#e7edf5; --muted:#93a0b5; --accent:#7aa2ff; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.45 ui-sans-serif, system-ui, sans-serif; background:var(--bg); color:var(--text); }
+  header, main { width:min(720px, calc(100% - 32px)); margin:0 auto; }
+  header { padding:28px 0 8px; }
+  .kicker { color:var(--accent); letter-spacing:.14em; text-transform:uppercase; font-size:12px; margin:0 0 8px; }
+  h1 { font-size:28px; margin:0 0 8px; }
+  p, label { color:var(--muted); }
+  a { color:var(--accent); }
+  form { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0; }
+  label { display:flex; flex-direction:column; gap:6px; font-size:13px; }
+  input { background:#10151d; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:12px; font:inherit; }
+  .slot { width:100%; text-align:left; background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:14px; padding:14px; margin:8px 0; font:inherit; }
+  .slot strong { display:block; }
+  .slot span { color:var(--muted); font-size:13px; }
+  .held { border-color:#3d4e86; }
+  .booked { border-color:#246b48; }
+  .note { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin:8px 0 28px; white-space:pre-wrap; }
+  button.action { background:var(--accent); color:#081226; border:0; border-radius:10px; padding:10px 12px; font:inherit; font-weight:700; margin-right:8px; }
+  button.ghost { background:transparent; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font:inherit; }
+</style>
+</head>
+<body>
+<header>
+  <p class="kicker">Live demo</p>
+  <h1>appointment-broker</h1>
+  <p>Hold a 30-minute slot, then confirm it. A hold is not a booking. <a href="https://github.com/aziz4rehman-hue/appointment-broker">Source</a></p>
+</header>
+<main>
+  <form id="who" onsubmit="return false">
+    <label>Client<input id="client" value="Aziz" autocomplete="name"></label>
+    <label>Reason<input id="reason" value="checkup"></label>
+  </form>
+  <div id="slots"></div>
+  <div class="note" id="note">Tap an open slot to hold it.</div>
+</main>
+<script>
+const slots = [
+  ["Sara", "2026-11-20", "15:00"],
+  ["Sara", "2026-11-20", "16:00"],
+  ["Sara", "2026-11-21", "09:00"],
+  ["Khan", "2026-11-20", "15:00"],
+  ["Khan", "2026-11-22", "11:30"],
+].map(([provider, day, time], i) => ({ id: i, provider, day, time, status: "open", client: "", reason: "", appt: "" }));
+let seq = 1001;
+const note = document.getElementById("note");
+function say(text) { note.textContent = text; }
+function render() {
+  const root = document.getElementById("slots");
+  root.replaceChildren();
+  for (const slot of slots) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "slot " + slot.status;
+    const title = document.createElement("strong");
+    title.textContent = `${slot.provider} · ${slot.day} ${slot.time}`;
+    const meta = document.createElement("span");
+    meta.textContent = slot.status === "open"
+      ? "30 minutes · open"
+      : `${slot.status} ${slot.appt} · ${slot.client}${slot.reason ? " · " + slot.reason : ""}`;
+    btn.append(title, meta);
+    if (slot.status === "open") btn.onclick = () => hold(slot);
+    else btn.onclick = () => focus(slot);
+    root.append(btn);
+  }
+}
+function hold(slot) {
+  const client = document.getElementById("client").value.trim() || "Guest";
+  const reason = document.getElementById("reason").value.trim();
+  slot.status = "held";
+  slot.client = client;
+  slot.reason = reason;
+  slot.appt = "APT-" + seq++;
+  say(`Held ${slot.appt}\n${client} with ${slot.provider}\n${slot.day} ${slot.time} for 30 minutes\nThis is a hold, not a final booking.`);
+  const confirm = document.createElement("div");
+  const ok = document.createElement("button");
+  ok.className = "action";
+  ok.type = "button";
+  ok.textContent = "Confirm " + slot.appt;
+  ok.onclick = () => {
+    if (slot.status !== "held") return;
+    slot.status = "booked";
+    say(`Booked ${slot.appt}\n${slot.client} is confirmed with ${slot.provider} on ${slot.day} at ${slot.time}.`);
+    render();
+  };
+  const cancel = document.createElement("button");
+  cancel.className = "ghost";
+  cancel.type = "button";
+  cancel.textContent = "Release";
+  cancel.onclick = () => release(slot);
+  note.append(document.createElement("br"), document.createElement("br"), ok, cancel);
+  render();
+}
+function focus(slot) {
+  say(`${slot.provider} ${slot.day} ${slot.time} is ${slot.status}.\n${slot.appt} · ${slot.client}`);
+  if (slot.status === "held") {
+    const ok = document.createElement("button");
+    ok.className = "action";
+    ok.type = "button";
+    ok.textContent = "Confirm " + slot.appt;
+    ok.onclick = () => { slot.status = "booked"; say(`Booked ${slot.appt}\n${slot.client} is confirmed with ${slot.provider} on ${slot.day} at ${slot.time}.`); render(); };
+    note.append(document.createElement("br"), document.createElement("br"), ok);
+  }
+  const cancel = document.createElement("button");
+  cancel.className = "ghost";
+  cancel.type = "button";
+  cancel.textContent = "Cancel " + slot.appt;
+  cancel.onclick = () => release(slot);
+  note.append(document.createElement("br"), document.createElement("br"), cancel);
+  const open = slots.filter(s => s.provider === slot.provider && s.status === "open");
+  if (open.length && slot.status !== "open") {
+    const extra = document.createElement("div");
+    extra.textContent = "\nStill open: " + open.map(s => s.day + " " + s.time).join(", ");
+    note.append(extra);
+  }
+}
+function release(slot) {
+  const id = slot.appt;
+  const when = `${slot.provider} ${slot.day} ${slot.time}`;
+  slot.status = "open";
+  slot.client = "";
+  slot.reason = "";
+  slot.appt = "";
+  say(`Cancelled ${id}. ${when} is open again.`);
+  render();
+}
+render();
+</script>
+</body>
+</html>
