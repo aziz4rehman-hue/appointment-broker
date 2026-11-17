@@ -8,7 +8,7 @@ A small appointment broker with three steps:
 
 The calendar lives in memory for the process. No network, no database.
 
-**[See the live demo](https://aziz4rehman-hue.github.io/appointment-broker/)**
+**[See the live demo](https://htmlpreview.github.io/?https://raw.githubusercontent.com/aziz4rehman-hue/appointment-broker/main/docs/index.html)**
 
 ```bash
 git clone https://github.com/aziz4rehman-hue/appointment-broker.git
